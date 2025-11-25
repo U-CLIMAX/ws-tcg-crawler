@@ -18,13 +18,15 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
 class WsScraper:
-    def __init__(self, run_dir: Path):
+    def __init__(self, run_dir: Path, download_images: bool = True):
         self.run_dir = run_dir
+        self.download_images = download_images
         self.data_dir = run_dir / "card-data"
         self.img_dir = run_dir / "card-images"
 
         self.data_dir.mkdir(parents=True, exist_ok=True)
-        self.img_dir.mkdir(parents=True, exist_ok=True)
+        if self.download_images:
+            self.img_dir.mkdir(parents=True, exist_ok=True)
 
         self.products_data = {}
         self.download_queue = []
@@ -164,7 +166,7 @@ class WsScraper:
                             card.all_cards.append(version_info)
                             product_store[key] = card
 
-                        if raw_data["image_url"]:
+                        if self.download_images and raw_data["image_url"]:
                             img_filename = (
                                 f"{raw_data['full_card_no'].replace('/', '-')}.png"
                             )
@@ -193,8 +195,11 @@ class WsScraper:
     async def run(self, series: str):
         await self.scrape(series)
 
-        if self.download_queue:
+        if self.download_images and self.download_queue:
+            logger.info(f"開始下載 {len(self.download_queue)} 張圖片...")
             await batch_download_images(self.download_queue)
+        elif not self.download_images:
+            logger.info("已略過圖片下載。")
 
         self.save_results()
 
@@ -218,12 +223,14 @@ async def main():
     parser.add_argument(
         "-s", "--series", required=True, help="系列名 (例如: 甘神さんちの縁結び)"
     )
+    parser.add_argument("--no-image", action="store_true", help="不下載圖片")
+
     args = parser.parse_args()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_output_dir = ROOT_DIR / "data" / timestamp
 
-    scraper = WsScraper(run_dir=run_output_dir)
+    scraper = WsScraper(run_dir=run_output_dir, download_images=not args.no_image)
 
     await scraper.run(args.series)
 
