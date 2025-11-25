@@ -5,8 +5,8 @@
 1.  **複製專案到本地**
 
     ```bash
-    git clone https://github.com/U-CLIMAX/ws-tcg-scraper
-    cd ws-crawler
+    git clone https://github.com/U-CLIMAX/ws-tcg-crawler
+    cd ws-tcg-crawler
     ```
 
 2.  **安裝相依套件**
